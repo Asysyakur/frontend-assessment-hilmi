@@ -3,6 +3,7 @@ import { formatPrice, formatDate } from "../utils/formatters.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 import CategoryBadge from "../components/CategoryBadge.jsx";
 import ProductForm from "../components/ProductForm.jsx";
+import ProductDetail from "../components/ProductDetail.jsx";
 
 function Dashboard() {
   const [products, setProducts] = useState([]);
@@ -14,25 +15,28 @@ function Dashboard() {
 
   const [openProductForm, setOpenProductForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [openProductDetail, setOpenProductDetail] = useState(false);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(
+        "https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products",
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(
-          "https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products",
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setProducts(data);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-
     fetchProducts();
   }, []);
 
@@ -63,6 +67,94 @@ function Dashboard() {
     startIndex,
     startIndex + productsPerPage,
   );
+
+  // CRUD Functions (Create, Read, Update, Delete) can be implemented here.
+  const handleCreateProduct = async (newProduct) => {
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newProduct),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to create product: ${response.status}`);
+      }
+
+      const createdProduct = await response.json();
+
+      setProducts((prevProducts) => [...prevProducts, createdProduct]);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateProduct = async (updatedProduct) => {
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        `https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products/${updatedProduct.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedProduct),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to update product: ${response.status}`);
+      }
+
+      const updatedProductFromServer = await response.json();
+
+      setProducts((prevProducts) =>
+        prevProducts.map((product) =>
+          product.id === updatedProductFromServer.id
+            ? updatedProductFromServer
+            : product,
+        ),
+      );
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    try {
+      const response = await fetch(
+        `https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products/${productId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete product: ${response.status}`);
+      }
+
+      setProducts((prevProducts) =>
+        prevProducts.filter((product) => product.id !== productId),
+      );
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
@@ -196,7 +288,7 @@ function Dashboard() {
                     className="transition-colors hover:bg-slate-50"
                     onClick={() => {
                       setSelectedProduct(product);
-                      setOpenProductForm(true);
+                      setOpenProductDetail(true);
                     }}
                   >
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
@@ -302,17 +394,63 @@ function Dashboard() {
 
             <ProductForm
               initialData={selectedProduct}
-              onSubmit={(formData) => {
-                console.log(selectedProduct ? "Update:" : "Create:", formData);
+              onSubmit={async (formData) => {
+                try {
+                  if (selectedProduct) {
+                    await handleUpdateProduct(formData);
+                  } else {
+                    await handleCreateProduct(formData);
+                  }
 
-                setOpenProductForm(false);
+                  setOpenProductForm(false);
+                  setSelectedProduct(null);
+                } catch (error) {
+                  // Modal tetap terbuka jika request gagal
+                  console.error(error);
+                }
+              }}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+        </div>
+      )}
+      {/* Product Detail Modal */}
+      {openProductDetail && selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Product Details
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenProductDetail(false);
+                  setSelectedProduct(null);
+                }}
+                className="text-xl text-slate-400 hover:text-slate-600"
+              >
+                &times;
+              </button>
+            </div>
+            <ProductDetail
+              product={selectedProduct}
+              onEdit={() => {
+                setOpenProductDetail(false);
+                setOpenProductForm(true);
+              }}
+              onDelete={async () => {
+                const confirmed = window.confirm(
+                  `Are you sure you want to delete "${selectedProduct.name}"?`,
+                );
+
+                if (!confirmed) return;
+
+                await handleDeleteProduct(selectedProduct.id);
+
+                setOpenProductDetail(false);
                 setSelectedProduct(null);
               }}
-              onCancel={() => {
-                setOpenProductForm(false);
-                setSelectedProduct(null);
-              }}
-              isSubmitting={false}
             />
           </div>
         </div>

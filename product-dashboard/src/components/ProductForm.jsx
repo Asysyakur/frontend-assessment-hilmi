@@ -6,10 +6,12 @@ import {
 } from "../utils/productValidation";
 
 const EMPTY_FORM = {
+  id: null,
   name: "",
   category: "",
   price: "",
   status: "In Stock",
+  createdAt: new Date().toISOString(),
 };
 
 function ProductForm({
@@ -28,10 +30,12 @@ function ProductForm({
   useEffect(() => {
     if (initialData) {
       setFormData({
+        id: initialData.id ?? null,
         name: initialData.name ?? "",
         category: initialData.category ?? "",
         price: initialData.price ?? "",
         status: initialData.status ?? "In Stock",
+        createdAt: initialData.createdAt ?? new Date().toISOString(),
       });
     } else {
       setFormData(EMPTY_FORM);
@@ -96,15 +100,25 @@ function ProductForm({
       return;
     }
 
-    onSubmit({
-      ...formData,
+    const payload = {
       name: formData.name.trim(),
+      category: formData.category,
       price: Number(formData.price),
-    });
+      status: formData.status,
+      createdAt: isEditMode ? formData.createdAt : new Date().toISOString(),
+    };
+
+    if (isEditMode) {
+      onSubmit({
+        ...payload,
+        id: formData.id,
+      });
+    } else {
+      onSubmit(payload);
+    }
   };
 
-  const isFormInvalid =
-    Object.keys(validateProductForm(formData)).length > 0;
+  const isFormInvalid = Object.keys(validateProductForm(formData)).length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -208,9 +222,7 @@ function FormField({ label, error, children }) {
 
       {children}
 
-      {error && (
-        <p className="text-xs font-medium text-red-600">{error}</p>
-      )}
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
     </div>
   );
 }
