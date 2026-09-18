@@ -31,6 +31,54 @@
       "price": 425000,
       "status": "In Stock",
       "createdAt": "2024-04-20T08:00:00.000Z"
+    },
+    {
+      "id": 5,
+      "name": "Bluetooth Noise-Canceling Headphones",
+      "category": "Electronics",
+      "price": 2250000,
+      "status": "In Stock",
+      "createdAt": "2024-05-05T13:20:00.000Z"
+    },
+    {
+      "id": 6,
+      "name": "Smart Fitness Tracker",
+      "category": "Electronics",
+      "price": 950000,
+      "status": "Out of Stock",
+      "createdAt": "2024-06-15T10:15:00.000Z"
+    },
+    {
+      "id": 7,
+      "name": "Organic Cotton T-Shirt",
+      "category": "Apparel",
+      "price": 250000,
+      "status": "In Stock",
+      "createdAt": "2024-07-01T12:30:00.000Z"
+    },
+    {
+      "id": 8,
+      "name": "Stainless Steel Water Bottle",
+      "category": "Home & Kitchen",
+      "price": 175000,
+      "status": "In Stock",
+      "createdAt": "2024-08-10T09:45:00.000Z"
+    },
+    {
+      "id": 9,
+      "name": "Wireless Earbuds with Charging Case",
+      "category": "Electronics",
+      "price": 850000,
+      "status": "Out of Stock",
+      "createdAt": "2024-09-05T11:00:00.000Z"
+    },
+    {
+      "id": 10,
+      "name": "Adjustable Standing Desk Converter",
+      "category": "Home & Kitchen",
+      "price": 1950000,
+      "status": "In Stock",
+      "createdAt": "2024-10-20T14:30:00.000Z"
     }
   ]
 }
