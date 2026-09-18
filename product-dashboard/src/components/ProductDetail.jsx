@@ -2,7 +2,7 @@ import { formatDate, formatPrice } from "../utils/formatters";
 import StatusBadge from "./StatusBadge";
 import CategoryBadge from "./CategoryBadge";
 
-function ProductDetail({ product, onEdit, onDelete }) {
+function ProductDetail({ product, onEdit, onDelete, isDeleting = false }) {
   return (
     <div className="space-y-6">
       {/* Product Header */}
@@ -11,13 +11,9 @@ function ProductDetail({ product, onEdit, onDelete }) {
           Product Name
         </p>
 
-        <h3 className="text-xl font-bold text-slate-900">
-          {product.name}
-        </h3>
+        <h3 className="text-xl font-bold text-slate-900">{product.name}</h3>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Product ID: #{product.id}
-        </p>
+        <p className="mt-1 text-sm text-slate-500">Product ID: #{product.id}</p>
       </div>
 
       {/* Product Information */}
@@ -52,9 +48,10 @@ function ProductDetail({ product, onEdit, onDelete }) {
         <button
           type="button"
           onClick={onDelete}
-          className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+          disabled={isDeleting}
+          className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Delete
+          {isDeleting ? "Deleting..." : "Delete"}
         </button>
 
         <button

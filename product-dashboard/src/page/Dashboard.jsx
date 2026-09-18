@@ -23,6 +23,7 @@ function Dashboard() {
   const [openProductDetail, setOpenProductDetail] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -82,7 +83,10 @@ function Dashboard() {
 
   // CRUD Functions (Create, Read, Update, Delete) can be implemented here.
   const handleCreateProduct = async (newProduct) => {
+    setIsSubmitting(true);
+
     const temporaryId = `temp-${Date.now()}`;
+    const previousProducts = products;
 
     const optimisticProduct = {
       ...newProduct,
@@ -90,10 +94,6 @@ function Dashboard() {
       createdAt: newProduct.createdAt || new Date().toISOString(),
     };
 
-    // Simpan state sebelumnya untuk rollback
-    const previousProducts = products;
-
-    // 1. Update UI langsung
     setProducts((prev) => [...prev, optimisticProduct]);
 
     try {
@@ -111,7 +111,6 @@ function Dashboard() {
 
       const createdProduct = await response.json();
 
-      // 2. Reconcile dengan response server
       setProducts((prev) =>
         prev.map((product) =>
           product.id === temporaryId ? createdProduct : product,
@@ -121,19 +120,19 @@ function Dashboard() {
       toast.success("Product created successfully.");
     } catch (error) {
       console.error(error);
-
-      // 3. Rollback
       setProducts(previousProducts);
-
-      // Tampilkan toast error
       toast.error("Failed to create product.");
+      throw error;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateProduct = async (updatedProduct) => {
+    setIsSubmitting(true);
+
     const previousProducts = products;
 
-    // Update UI langsung
     setProducts((prev) =>
       prev.map((product) =>
         product.id === updatedProduct.id ? updatedProduct : product,
@@ -155,7 +154,6 @@ function Dashboard() {
 
       const serverProduct = await response.json();
 
-      // Reconcile dengan data server
       setProducts((prev) =>
         prev.map((product) =>
           product.id === serverProduct.id ? serverProduct : product,
@@ -165,18 +163,19 @@ function Dashboard() {
       toast.success("Product updated successfully.");
     } catch (error) {
       console.error(error);
-
-      // Rollback
       setProducts(previousProducts);
-
       toast.error("Failed to update product.");
+      throw error;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteProduct = async (productId) => {
+    setIsDeleting(true);
+
     const previousProducts = products;
 
-    // Hapus dari UI langsung
     setProducts((prev) => prev.filter((product) => product.id !== productId));
 
     try {
@@ -191,11 +190,10 @@ function Dashboard() {
       toast.success("Product deleted successfully.");
     } catch (error) {
       console.error(error);
-
-      // Rollback
       setProducts(previousProducts);
-
       toast.error("Failed to delete product.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -353,7 +351,7 @@ function Dashboard() {
                   {paginatedProducts.map((product, index) => (
                     <tr
                       key={product.id}
-                      className="transition-colors hover:bg-slate-50"
+                      className="transition-colors hover:bg-slate-100 cursor-pointer"
                       onClick={() => {
                         setSelectedProduct(product);
                         setOpenProductDetail(true);
@@ -386,7 +384,7 @@ function Dashboard() {
                       </td>
                     </tr>
                   ))}
-                </tbody>  
+                </tbody>
               )}
             </table>
           </div>
@@ -520,6 +518,7 @@ function Dashboard() {
                 setOpenProductDetail(false);
                 setSelectedProduct(null);
               }}
+              isDeleting={isDeleting}
             />
           </div>
         </div>
