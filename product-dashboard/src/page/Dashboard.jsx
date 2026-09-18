@@ -214,26 +214,28 @@ function Dashboard() {
         {/* Table Card */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-5">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Product List
-              </h2>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Product List
+                </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                A list of all available products.
-              </p>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProduct(null);
-                  setOpenProductForm(true);
-                }}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-              >
-                Add Product
-              </button>
+                <p className="mt-1 text-sm text-slate-500">
+                  A list of all available products.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setOpenProductForm(true);
+                  }}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Add Product
+                </button>
+              </div>
             </div>
             <div className="mt-4 grid md:grid-cols-3 gap-4 grid-cols-1 w-full">
               <div className="flex flex-col gap-2">
