@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { formatPrice, formatDate } from "../utils/formatters.js";
 import StatusBadge from "../components/StatusBadge.jsx";
 import CategoryBadge from "../components/CategoryBadge.jsx";
+import ProductForm from "../components/ProductForm.jsx";
 
 function Dashboard() {
   const [products, setProducts] = useState([]);
@@ -10,6 +11,9 @@ function Dashboard() {
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 5;
+
+  const [openProductForm, setOpenProductForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -77,13 +81,27 @@ function Dashboard() {
         {/* Table Card */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-6 py-5">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Product List
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Product List
+              </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              A list of all available products.
-            </p>
+              <p className="mt-1 text-sm text-slate-500">
+                A list of all available products.
+              </p>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setOpenProductForm(true);
+                }}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Add Product
+              </button>
+            </div>
             <div className="mt-4 grid md:grid-cols-3 gap-4 grid-cols-1 w-full">
               <div className="flex flex-col gap-2">
                 <label
@@ -176,6 +194,10 @@ function Dashboard() {
                   <tr
                     key={product.id}
                     className="transition-colors hover:bg-slate-50"
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setOpenProductForm(true);
+                    }}
                   >
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
                       {startIndex + index + 1}
@@ -259,6 +281,42 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Product Form Modal */}
+      {openProductForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-slate-900">
+                {selectedProduct ? "Edit Product" : "Add Product"}
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => setOpenProductForm(false)}
+                className="text-xl text-slate-400 hover:text-slate-600"
+              >
+                &times;
+              </button>
+            </div>
+
+            <ProductForm
+              initialData={selectedProduct}
+              onSubmit={(formData) => {
+                console.log(selectedProduct ? "Update:" : "Create:", formData);
+
+                setOpenProductForm(false);
+                setSelectedProduct(null);
+              }}
+              onCancel={() => {
+                setOpenProductForm(false);
+                setSelectedProduct(null);
+              }}
+              isSubmitting={false}
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
