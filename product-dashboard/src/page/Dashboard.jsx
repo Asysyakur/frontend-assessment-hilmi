@@ -4,6 +4,11 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import CategoryBadge from "../components/CategoryBadge.jsx";
 import ProductForm from "../components/ProductForm.jsx";
 import ProductDetail from "../components/ProductDetail.jsx";
+import ProductTableSkeleton from "../components/ProductTableSkeleton.jsx";
+import toast from "react-hot-toast";
+
+const endpoint =
+  "https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products";
 
 function Dashboard() {
   const [products, setProducts] = useState([]);
@@ -19,20 +24,27 @@ function Dashboard() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const fetchProducts = async () => {
     try {
-      const response = await fetch(
-        "https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products",
-      );
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(endpoint);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`);
+        throw new Error("Failed to fetch products");
       }
 
       const data = await response.json();
       setProducts(data);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error(error);
+      setError("Failed to load products.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,89 +82,120 @@ function Dashboard() {
 
   // CRUD Functions (Create, Read, Update, Delete) can be implemented here.
   const handleCreateProduct = async (newProduct) => {
-    setIsSubmitting(true);
+    const temporaryId = `temp-${Date.now()}`;
+
+    const optimisticProduct = {
+      ...newProduct,
+      id: temporaryId,
+      createdAt: newProduct.createdAt || new Date().toISOString(),
+    };
+
+    // Simpan state sebelumnya untuk rollback
+    const previousProducts = products;
+
+    // 1. Update UI langsung
+    setProducts((prev) => [...prev, optimisticProduct]);
 
     try {
-      const response = await fetch(
-        "https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newProduct),
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(newProduct),
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to create product: ${response.status}`);
+        throw new Error("Failed to create product");
       }
 
       const createdProduct = await response.json();
 
-      setProducts((prevProducts) => [...prevProducts, createdProduct]);
+      // 2. Reconcile dengan response server
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === temporaryId ? createdProduct : product,
+        ),
+      );
+
+      toast.success("Product created successfully.");
     } catch (error) {
-      console.error("Error creating product:", error);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
+      console.error(error);
+
+      // 3. Rollback
+      setProducts(previousProducts);
+
+      // Tampilkan toast error
+      toast.error("Failed to create product.");
     }
   };
 
   const handleUpdateProduct = async (updatedProduct) => {
-    setIsSubmitting(true);
+    const previousProducts = products;
+
+    // Update UI langsung
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product,
+      ),
+    );
 
     try {
-      const response = await fetch(
-        `https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products/${updatedProduct.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedProduct),
+      const response = await fetch(`${endpoint}/${updatedProduct.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(updatedProduct),
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to update product: ${response.status}`);
+        throw new Error("Failed to update product");
       }
 
-      const updatedProductFromServer = await response.json();
+      const serverProduct = await response.json();
 
-      setProducts((prevProducts) =>
-        prevProducts.map((product) =>
-          product.id === updatedProductFromServer.id
-            ? updatedProductFromServer
-            : product,
+      // Reconcile dengan data server
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === serverProduct.id ? serverProduct : product,
         ),
       );
+
+      toast.success("Product updated successfully.");
     } catch (error) {
-      console.error("Error updating product:", error);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
+      console.error(error);
+
+      // Rollback
+      setProducts(previousProducts);
+
+      toast.error("Failed to update product.");
     }
   };
 
   const handleDeleteProduct = async (productId) => {
+    const previousProducts = products;
+
+    // Hapus dari UI langsung
+    setProducts((prev) => prev.filter((product) => product.id !== productId));
+
     try {
-      const response = await fetch(
-        `https://my-json-server.typicode.com/Asysyakur/frontend-assessment-hilmi/products/${productId}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const response = await fetch(`${endpoint}/${productId}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to delete product: ${response.status}`);
+        throw new Error("Failed to delete product");
       }
 
-      setProducts((prevProducts) =>
-        prevProducts.filter((product) => product.id !== productId),
-      );
+      toast.success("Product deleted successfully.");
     } catch (error) {
-      console.error("Error deleting product:", error);
+      console.error(error);
+
+      // Rollback
+      setProducts(previousProducts);
+
+      toast.error("Failed to delete product.");
     }
   };
 
@@ -281,44 +324,70 @@ function Dashboard() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
-                {paginatedProducts.map((product, index) => (
-                  <tr
-                    key={product.id}
-                    className="transition-colors hover:bg-slate-50"
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setOpenProductDetail(true);
-                    }}
-                  >
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                      {startIndex + index + 1}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-slate-900">
-                        {product.name}
-                      </p>
-                    </td>
-
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                      <CategoryBadge category={product.category} />
-                    </td>
-
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
-                      {formatPrice(product.price)}
-                    </td>
-
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <StatusBadge status={product.status} />
-                    </td>
-
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                      {formatDate(product.createdAt)}
+              {loading ? (
+                <ProductTableSkeleton />
+              ) : error ? (
+                <tbody>
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-6 text-center text-sm text-red-600"
+                    >
+                      {error}
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                </tbody>
+              ) : filteredProducts.length === 0 ? (
+                <tbody>
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-6 text-center text-sm text-slate-500"
+                    >
+                      No products found.
+                    </td>
+                  </tr>
+                </tbody>
+              ) : (
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedProducts.map((product, index) => (
+                    <tr
+                      key={product.id}
+                      className="transition-colors hover:bg-slate-50"
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setOpenProductDetail(true);
+                      }}
+                    >
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                        {startIndex + index + 1}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-slate-900">
+                          {product.name}
+                        </p>
+                      </td>
+
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                        <CategoryBadge category={product.category} />
+                      </td>
+
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                        {formatPrice(product.price)}
+                      </td>
+
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <StatusBadge status={product.status} />
+                      </td>
+
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                        {formatDate(product.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>  
+              )}
             </table>
           </div>
 
